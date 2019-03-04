@@ -11,3 +11,9 @@ fst config
 ```
 
 You're all set!
+
+## Usage
+Check out `--help` for detailed usage
+```
+fst --help
+```
