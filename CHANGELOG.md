@@ -1,6 +1,9 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Refactor
+- **list-servers:** Add `PRIVATE IP` column
+
 
 <a name="1.0.1"></a>
 ## [1.0.1] - 2019-03-04
