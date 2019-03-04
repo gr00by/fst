@@ -17,9 +17,10 @@ var allowedRegions = []string{"us-east-1", "us-west-2", "eu-west-1", "ap-northea
 
 // Server stores server information data.
 type Server struct {
-	Name    string
-	Env     string
-	Address string
+	Name      string
+	Env       string
+	PrivateIP string
+	PublicIP  string
 }
 
 // GetAllServers retrieves all servers from given regions and filters them out
@@ -70,9 +71,10 @@ func getFromRegion(awsCfg config.AWSCredentials, names, envs *filter, region str
 		if ip := res.Instances[0].PublicIpAddress; ip != nil && name != "" && env != "" {
 			if names.compareValue(name) && envs.compareValue(env) {
 				servers = append(servers, Server{
-					Name:    name,
-					Env:     env,
-					Address: *ip,
+					Name:      name,
+					Env:       env,
+					PrivateIP: *res.Instances[0].PrivateIpAddress,
+					PublicIP:  *ip,
 				})
 			}
 		}

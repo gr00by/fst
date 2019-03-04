@@ -62,10 +62,10 @@ func runListServers(_ *cobra.Command, _ []string) {
 		exitWithError(err)
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
-	fmt.Fprintln(w, "NAME\tENVIRONMENT\tADDRESS")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "NAME\tENVIRONMENT\tPRIVATE IP\tPUBLIC IP")
 	for _, server := range servers {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", server.Name, server.Env, server.Address)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", server.Name, server.Env, server.PrivateIP, server.PublicIP)
 	}
 	w.Flush()
 }
