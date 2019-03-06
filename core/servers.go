@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -12,27 +11,24 @@ import (
 	"github.com/gr00by87/fst/config"
 )
 
-// allowedRegions stores the list of allowed regions.
-var allowedRegions = []string{"us-east-1", "us-west-2", "eu-west-1", "ap-northeast-1", "ap-southeast-2"}
+// AllowedRegions stores the list of allowed regions.
+var AllowedRegions = []string{"us-east-1", "us-west-2", "eu-west-1", "ap-northeast-1", "ap-southeast-2"}
 
 // Server stores server information data.
 type Server struct {
 	Name      string
 	Env       string
+	Type      string
+	Region    string
 	PrivateIP string
 	PublicIP  string
 }
 
 // GetAllServers retrieves all servers from given regions and filters them out
 // by provided filters.
-func GetAllServers(awsCfg config.AWSCredentials, names, envs *filter, regions []string) (servers []Server, err error) {
-	regions, err = checkRegions(regions)
-	if err != nil {
-		return
-	}
-
+func GetAllServers(awsCfg config.AWSCredentials, regions []string, filters ...*filter) (servers []Server, err error) {
 	for _, region := range regions {
-		fromRegion, err := getFromRegion(awsCfg, names, envs, region)
+		fromRegion, err := getFromRegion(awsCfg, region, filters)
 		if err != nil {
 			return nil, err
 		}
@@ -53,7 +49,7 @@ func GetAllServers(awsCfg config.AWSCredentials, names, envs *filter, regions []
 
 // getFromRegion retrieves servers from a given region and filters them out
 // by provided filters.
-func getFromRegion(awsCfg config.AWSCredentials, names, envs *filter, region string) ([]Server, error) {
+func getFromRegion(awsCfg config.AWSCredentials, region string, filters []*filter) ([]Server, error) {
 	creds := credentials.NewStaticCredentials(awsCfg.ID, awsCfg.Secret, "")
 	cfg := aws.NewConfig().WithRegion(region).WithCredentials(creds)
 	svc := ec2.New(session.New(), cfg)
@@ -65,17 +61,24 @@ func getFromRegion(awsCfg config.AWSCredentials, names, envs *filter, region str
 
 	servers := []Server{}
 	for _, res := range instances.Reservations {
-		name := getTagValue("Name", res.Instances[0].Tags)
-		env := getTagValue("Env", res.Instances[0].Tags)
+		server := Server{
+			Region:    region,
+			PrivateIP: ptrToString(res.Instances[0].PrivateIpAddress),
+			PublicIP:  ptrToString(res.Instances[0].PublicIpAddress),
+		}
 
-		if ip := res.Instances[0].PublicIpAddress; ip != nil && name != "" && env != "" {
-			if names.compareValue(name) && envs.compareValue(env) {
-				servers = append(servers, Server{
-					Name:      name,
-					Env:       env,
-					PrivateIP: *res.Instances[0].PrivateIpAddress,
-					PublicIP:  *ip,
-				})
+		tags := map[string]*string{
+			TagName: &server.Name,
+			TagEnv:  &server.Env,
+			TagType: &server.Type,
+		}
+
+		getTagValues(tags, res.Instances[0].Tags)
+
+		// List only servers with private ip address.
+		if server.PrivateIP != "" {
+			if checkAllFilters(filters, tags) {
+				servers = append(servers, server)
 			}
 		}
 	}
@@ -83,29 +86,19 @@ func getFromRegion(awsCfg config.AWSCredentials, names, envs *filter, region str
 	return servers, nil
 }
 
-// checkRegions checks if given regions are allowed.
-func checkRegions(regions []string) ([]string, error) {
-	if regions[0] == "all" {
-		return allowedRegions, nil
-	}
-
-	allowedRegionsFilter := NewFilter(allowedRegions, Equals, DontIgnoreCase)
-	for _, region := range regions {
-		if !allowedRegionsFilter.compareValue(region) {
-			return nil, fmt.Errorf("invalid region: %s", region)
+// getTagValues gets selected tag values from []*ec2.Tag slice.
+func getTagValues(tags map[string]*string, ec2Tags []*ec2.Tag) {
+	for _, tag := range ec2Tags {
+		if val, ok := tags[*tag.Key]; ok {
+			*val = *tag.Value
 		}
 	}
-
-	return regions, nil
 }
 
-// getTagValues gets tag value from []*ec2.Tag slice.
-func getTagValue(key string, tags []*ec2.Tag) string {
-	for _, tag := range tags {
-		if *tag.Key == key {
-			return *tag.Value
-		}
+// ptrToString returns a string value of a pointer to string.
+func ptrToString(ptr *string) string {
+	if ptr != nil {
+		return *ptr
 	}
-
 	return ""
 }

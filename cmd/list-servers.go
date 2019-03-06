@@ -55,9 +55,14 @@ func runListServers(_ *cobra.Command, _ []string) {
 		exitWithError(err)
 	}
 
-	nameFilter := core.NewFilter(*name, core.Contains, *ignoreCase)
-	envFilter := core.NewFilter(*env, core.Equals, *ignoreCase)
-	servers, err := core.GetAllServers(cfg.AWSCredentials, nameFilter, envFilter, *region)
+	regions, err := checkRegions(*region)
+	if err != nil {
+		exitWithError(err)
+	}
+
+	nameFilter := core.NewFilter(core.TagName, *name, core.Contains, *ignoreCase)
+	envFilter := core.NewFilter(core.TagEnv, *env, core.Equals, *ignoreCase)
+	servers, err := core.GetAllServers(cfg.AWSCredentials, regions, nameFilter, envFilter)
 	if err != nil {
 		exitWithError(err)
 	}
@@ -68,4 +73,28 @@ func runListServers(_ *cobra.Command, _ []string) {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", server.Name, server.Env, server.PrivateIP, server.PublicIP)
 	}
 	w.Flush()
+}
+
+// checkRegions validates passed regions. If `all` is paseed, it returns all
+// the allowed regions. If any invalid region passed it returns an error.
+func checkRegions(regions []string) ([]string, error) {
+	if regions[0] == "all" {
+		return core.AllowedRegions, nil
+	}
+
+	for _, region := range regions {
+		isValid := false
+		for _, allowedRegion := range core.AllowedRegions {
+			if region == allowedRegion {
+				isValid = true
+				break
+			}
+		}
+
+		if !isValid {
+			return nil, fmt.Errorf("invalid region: %s", region)
+		}
+	}
+
+	return regions, nil
 }
