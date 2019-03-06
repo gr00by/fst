@@ -1,6 +1,8 @@
 package core
 
 import (
+	"errors"
+	"net"
 	"sort"
 	"strings"
 
@@ -9,6 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gr00by87/fst/config"
+)
+
+const (
+	idName      = "tag:Name"
+	idPrivateIP = "private-ip-address"
+	idPublicIP  = "ip-address"
 )
 
 // AllowedRegions stores the list of allowed regions.
@@ -24,11 +32,36 @@ type Server struct {
 	PublicIP  string
 }
 
+// serverID stores the server identifier and it's type.
+type serverID struct {
+	typ string
+	id  string
+}
+
+// NewServerID creates a new serverID.
+func NewServerID(id string) serverID {
+	sid := serverID{
+		id:  id,
+		typ: idName,
+	}
+
+	ip := net.ParseIP(id)
+	if ip != nil {
+		if strings.HasPrefix(id, "172.") {
+			sid.typ = idPrivateIP
+		} else {
+			sid.typ = idPublicIP
+		}
+	}
+
+	return sid
+}
+
 // GetAllServers retrieves all servers from given regions and filters them out
 // by provided filters.
 func GetAllServers(awsCfg config.AWSCredentials, regions []string, filters ...*filter) (servers []Server, err error) {
 	for _, region := range regions {
-		fromRegion, err := getFromRegion(awsCfg, region, filters)
+		fromRegion, err := getFromRegion(awsCfg, region, &ec2.DescribeInstancesInput{}, filters...)
 		if err != nil {
 			return nil, err
 		}
@@ -47,14 +80,41 @@ func GetAllServers(awsCfg config.AWSCredentials, regions []string, filters ...*f
 	return
 }
 
+// GetSingleServer tries to find a server iterating over all available regions.
+// Returns an error if no server is found.
+func GetSingleServer(awsCfg config.AWSCredentials, sid serverID) (*Server, error) {
+	for _, region := range AllowedRegions {
+
+		servers, err := getFromRegion(awsCfg, region, &ec2.DescribeInstancesInput{
+			Filters: []*ec2.Filter{
+				&ec2.Filter{
+					Name: aws.String(sid.typ),
+					Values: []*string{
+						aws.String(sid.id),
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(servers) > 0 {
+			return &servers[0], nil
+		}
+	}
+
+	return nil, errors.New("server not found")
+}
+
 // getFromRegion retrieves servers from a given region and filters them out
 // by provided filters.
-func getFromRegion(awsCfg config.AWSCredentials, region string, filters []*filter) ([]Server, error) {
+func getFromRegion(awsCfg config.AWSCredentials, region string, dii *ec2.DescribeInstancesInput, filters ...*filter) ([]Server, error) {
 	creds := credentials.NewStaticCredentials(awsCfg.ID, awsCfg.Secret, "")
 	cfg := aws.NewConfig().WithRegion(region).WithCredentials(creds)
 	svc := ec2.New(session.New(), cfg)
 
-	instances, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{})
+	instances, err := svc.DescribeInstances(dii)
 	if err != nil {
 		return nil, err
 	}

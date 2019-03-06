@@ -21,7 +21,7 @@ func init() {
 	rootCmd.AddCommand(scpCmd)
 }
 
-// runConfig executes the config command.
+// runSCP executes the scp command.
 func runSCP(_ *cobra.Command, _ []string) {
 	exitWithError(errors.New("scp not implemented yet"))
 }

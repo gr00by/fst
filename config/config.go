@@ -17,7 +17,8 @@ var (
 
 // Config stores config file structure.
 type Config struct {
-	AWSCredentials AWSCredentials `json:"aws_credentials"`
+	AWSCredentials AWSCredentials      `json:"aws_credentials"`
+	BastionHosts   map[string][]string `json:"bastion_hosts"`
 }
 
 // AWSCredentials stores the AWS credentials.
@@ -33,7 +34,7 @@ func SaveToFile(cfg *Config) error {
 		return err
 	}
 
-	file, err := os.OpenFile(path.Join(usr.HomeDir, fileName), os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(path.Join(usr.HomeDir, fileName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return errConfigSave
 	}

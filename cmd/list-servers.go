@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	// flag variables.
 	name       *[]string
 	env        *[]string
 	region     *[]string
@@ -22,7 +23,7 @@ var (
 	listServersCmd = &cobra.Command{
 		Use:   "list-servers",
 		Short: "List available servers",
-		Long:  "This subcommand lists available servers from selected AWS region(s), filtered by Name and Env tags",
+		Long:  "This subcommand lists available servers from selected AWS region(s), filtered by Name and Env tags.",
 		Run:   runListServers,
 	}
 )
