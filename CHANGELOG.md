@@ -1,7 +1,14 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="1.1.0"></a>
+## [1.1.0] - 2019-03-06
+### Feat
+- **ssh:** Add ssh subcommand
+
 ### Refactor
+- **filters:** Refactor filters to be more universal
 - **list-servers:** Add `PRIVATE IP` column
 
 
@@ -17,5 +24,6 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.0.1...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/gr00by87/fst/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/gr00by87/fst/compare/1.0.0...1.0.1
