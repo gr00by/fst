@@ -2,6 +2,15 @@
 ## [Unreleased]
 
 
+<a name="1.2.0"></a>
+## [1.2.0] - 2019-03-18
+### Feat
+- **list-servers:** Add `ls` subcommand (alias of `list-servers`)
+- **scp:** Add `scp` subcommand
+- **ssh:** Add support for `-L` and `-F` ssh flags
+- **ssh-config:** Add `ssh-config` subcommand
+
+
 <a name="1.1.0"></a>
 ## [1.1.0] - 2019-03-06
 ### Feat
@@ -24,6 +33,7 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/gr00by87/fst/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/gr00by87/fst/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/gr00by87/fst/compare/1.0.0...1.0.1
