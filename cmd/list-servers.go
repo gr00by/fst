@@ -26,18 +26,34 @@ var (
 		Long:  "This subcommand lists available servers from selected AWS region(s), filtered by Name and Env tags.",
 		Run:   runListServers,
 	}
+
+	// lsCmd represents the ls (list-servers alias) command.
+	lsCmd = &cobra.Command{
+		Use:   "ls",
+		Short: "List available servers (alias of list-servers)",
+		Long:  "This subcommand lists available servers from selected AWS region(s), filtered by Name and Env tags.",
+		Run:   runListServers,
+	}
 )
 
 // init initializes the cobra command and flags.
 func init() {
 	rootCmd.AddCommand(listServersCmd)
-	name = listServersCmd.Flags().StringSliceP("name", "n", []string{}, "filter servers by Name tag, multiple comma separated values are allowed")
-	env = listServersCmd.Flags().StringSliceP("env", "e", []string{}, "filter servers by Env tag, multiple comma separated values are allowed")
-	region = listServersCmd.Flags().StringSliceP("region", "r", []string{"us-east-1"}, "look for servers in selected AWS region(s), any of: us-east-1,us-west-2,eu-west-1,ap-northeast-1,ap-southeast-2,all")
-	ignoreCase = listServersCmd.Flags().BoolP("ignore-case", "i", false, "ignore case in tag filters")
+	rootCmd.AddCommand(lsCmd)
+
+	addFlags(listServersCmd)
+	addFlags(lsCmd)
+}
+
+// addFlags adds the default list-servers command flags.
+func addFlags(cmd *cobra.Command) {
+	name = cmd.Flags().StringSliceP("name", "n", []string{}, "filter servers by Name tag, multiple comma separated values are allowed")
+	env = cmd.Flags().StringSliceP("env", "e", []string{}, "filter servers by Env tag, multiple comma separated values are allowed")
+	region = cmd.Flags().StringSliceP("region", "r", []string{"us-east-1"}, "look for servers in selected AWS region(s), any of: us-east-1,us-west-2,eu-west-1,ap-northeast-1,ap-southeast-2,all")
+	ignoreCase = cmd.Flags().BoolP("ignore-case", "i", false, "ignore case in tag filters")
 
 	// Remove confusing `[]` symbols from region's default value.
-	listServersCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		if flag.Name == "region" {
 			flag.DefValue = strings.Map(func(r rune) rune {
 				if r == '[' || r == ']' {
