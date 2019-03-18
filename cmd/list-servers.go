@@ -57,7 +57,7 @@ func addFlags(cmd *cobra.Command) {
 		if flag.Name == "region" {
 			flag.DefValue = strings.Map(func(r rune) rune {
 				if r == '[' || r == ']' {
-					return -1
+					return '"'
 				}
 				return r
 			}, flag.DefValue)

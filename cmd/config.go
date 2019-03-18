@@ -13,14 +13,9 @@ import (
 )
 
 var (
-	// flag variables.
 	awsCredentials *bool
 	bastionHosts   *bool
 	checkStatus    *bool
-
-	// status symbols.
-	success = aurora.Green("✓")
-	failure = aurora.Red("✗")
 
 	// configCmd represents the config command.
 	configCmd = &cobra.Command{
@@ -37,13 +32,12 @@ func init() {
 	awsCredentials = configCmd.Flags().BoolP("aws-credentials", "a", false, "displays prompts to setup aws credentials")
 	bastionHosts = configCmd.Flags().BoolP("bastion-hosts", "b", false, "updates bastion hosts list")
 	checkStatus = configCmd.Flags().BoolP("check-status", "c", false, "checks configuration status")
-
-	surveyCore.QuestionIcon = "🔒"
-	surveyCore.ErrorTemplate = fmt.Sprintf("%s %s\n", failure.String(), aurora.Red("{{.Error}}").String())
 }
 
 // runConfig executes the config command.
 func runConfig(_ *cobra.Command, _ []string) {
+	surveyCore.QuestionIcon = "🔒"
+
 	if *checkStatus {
 		checkConfigStatus()
 		return
@@ -63,14 +57,14 @@ func runConfig(_ *cobra.Command, _ []string) {
 		if err = saveConfig(cfg, getAWSCredentials); err != nil {
 			exitWithError(err)
 		}
-		fmt.Println(success, "AWS credentials succesfully updated")
+		fmt.Println(success, "AWS credentials updated successfully")
 	}
 
 	if *bastionHosts {
 		if err = saveConfig(cfg, getBastionHosts); err != nil {
 			exitWithError(err)
 		}
-		fmt.Println(success, "Bastion hosts list succesfully updated")
+		fmt.Println(success, "Bastion hosts list updated successfully")
 	}
 }
 
@@ -135,15 +129,15 @@ func getBastionHosts(cfg *config.Config) error {
 
 // checkConfigStatus checks the current configuration status.
 func checkConfigStatus() {
-	awsCredentialsStatus, bastionHostsStatus := aurora.Red("✗"), aurora.Red("✗")
+	awsCredentialsStatus, bastionHostsStatus := failure, failure
 
 	if cfg, err := config.LoadFromFile(); err == nil {
 		if cfg.AWSCredentials.ID != "" && cfg.AWSCredentials.Secret != "" {
-			awsCredentialsStatus = aurora.Green("✓")
+			awsCredentialsStatus = success
 		}
 
 		if len(cfg.BastionHosts) > 0 {
-			bastionHostsStatus = aurora.Green("✓")
+			bastionHostsStatus = success
 		}
 	}
 

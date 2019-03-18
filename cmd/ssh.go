@@ -1,14 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/gr00by87/fst/config"
 	"github.com/gr00by87/fst/core"
 	"github.com/spf13/cobra"
 )
@@ -40,14 +36,7 @@ func init() {
 
 // runSSH executes the ssh command.
 func runSSH(_ *cobra.Command, args []string) {
-	cfg, err := config.LoadFromFile()
-	if err != nil {
-		exitWithError(err)
-	}
-
-	if len(cfg.BastionHosts) == 0 {
-		exitWithError(errors.New("bastion hosts not configured, use `fst config` to configure"))
-	}
+	cfg := checkBastionHosts()
 
 	server, err := core.GetSingleServer(cfg.AWSCredentials, core.NewServerID(args[0]))
 	if err != nil {
@@ -76,10 +65,4 @@ func runSSH(_ *cobra.Command, args []string) {
 
 	fmt.Println(strings.Join(cmd, " "))
 	os.Exit(3)
-}
-
-// randomHost selects a random host from hosts slice.
-func randomHost(hosts []string) string {
-	rand.Seed(time.Now().Unix())
-	return hosts[rand.Intn(len(hosts))]
 }

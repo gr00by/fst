@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gr00by87/fst/config"
 	"github.com/gr00by87/fst/core"
 	"github.com/spf13/cobra"
 )
@@ -38,14 +37,7 @@ func init() {
 
 // runSCP executes the scp command.
 func runSCP(_ *cobra.Command, args []string) {
-	cfg, err := config.LoadFromFile()
-	if err != nil {
-		exitWithError(err)
-	}
-
-	if len(cfg.BastionHosts) == 0 {
-		exitWithError(errors.New("bastion hosts not configured, use `fst config` to configure"))
-	}
+	cfg := checkBastionHosts()
 
 	region := ""
 	for i, arg := range args {
