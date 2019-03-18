@@ -2,14 +2,14 @@
 
 cmd="fst-core $@"
 
-if [ "$1" = "ssh" ]
+if [[ $1 == "ssh" ]] || [[ $1 == "scp" ]]
 then
   cmd_output="$(${cmd})"
   cmd_exit_code=$?
 
   if [ ${cmd_exit_code} -eq 3 ]
   then
-    ${cmd_output}
+    eval "${cmd_output}"
   else
     echo "${cmd_output}"
     exit ${cmd_exit_code}

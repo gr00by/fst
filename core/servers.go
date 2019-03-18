@@ -1,7 +1,7 @@
 package core
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"sort"
 	"strings"
@@ -104,7 +104,7 @@ func GetSingleServer(awsCfg config.AWSCredentials, sid serverID) (*Server, error
 		}
 	}
 
-	return nil, errors.New("server not found")
+	return nil, fmt.Errorf("server not found: %s", sid.id)
 }
 
 // getFromRegion retrieves servers from a given region and filters them out
