@@ -14,6 +14,8 @@ import (
 )
 
 var (
+	configFile   *string
+	forwardPort  *string
 	identityFile *string
 	loginName    *string
 
@@ -30,6 +32,8 @@ var (
 // init initializes the cobra command and flags.
 func init() {
 	rootCmd.AddCommand(sshCmd)
+	configFile = sshCmd.Flags().StringP("config-file", "F", "", "configuration file location")
+	forwardPort = sshCmd.Flags().StringP("forward-port", "L", "", "forward local port")
 	identityFile = sshCmd.Flags().StringP("identity-file", "i", "", "identity file location")
 	loginName = sshCmd.Flags().StringP("login-name", "l", "", "login user name")
 }
@@ -56,6 +60,12 @@ func runSSH(_ *cobra.Command, args []string) {
 	}
 
 	cmd := []string{"ssh", "-J", randomHost(bastionHost)}
+	if *configFile != "" {
+		cmd = append(cmd, "-F", *configFile)
+	}
+	if *forwardPort != "" {
+		cmd = append(cmd, "-L", *forwardPort)
+	}
 	if *identityFile != "" {
 		cmd = append(cmd, "-i", *identityFile)
 	}
