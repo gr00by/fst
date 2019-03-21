@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	forwardPort     *string
-	loginName       *string
-	sshConfigFile   *string
-	sshIdentityFile *string
+	forwardPort                  *string
+	loginName                    *string
+	sshConfigFile                *string
+	sshIdentityFile              *string
+	sshDoNotExecuteRemoteCommand *bool
 
 	// sshCmd represents the ssh command.
 	sshCmd = &cobra.Command{
@@ -32,6 +33,7 @@ func init() {
 	loginName = sshCmd.Flags().StringP("login-name", "l", "", "login user name")
 	sshConfigFile = sshCmd.Flags().StringP("config-file", "F", "", "configuration file location")
 	sshIdentityFile = sshCmd.Flags().StringP("identity-file", "i", "", "identity file location")
+	sshDoNotExecuteRemoteCommand = sshCmd.Flags().BoolP("do-not-execute", "N", false, "do not execute a remote command (this is useful for just forwarding ports)")
 }
 
 // runSSH executes the ssh command.
@@ -62,6 +64,9 @@ func runSSH(_ *cobra.Command, args []string) {
 		cmd = append(cmd, "-i", *sshIdentityFile)
 	}
 	cmd = append(cmd, server.PrivateIP)
+	if *sshDoNotExecuteRemoteCommand {
+		cmd = append(cmd, "-N")
+	}
 
 	fmt.Println(strings.Join(cmd, " "))
 	os.Exit(3)
