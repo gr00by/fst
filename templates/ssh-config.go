@@ -1,8 +1,8 @@
 package templates
 
 // SSHConfig stores the ssh config template.
-var SSHConfig = `{{range .BastionHosts}}# Bastion - {{.Region}}{{if .ID}} #{{.ID}}{{end}}
-Host {{.Region}}{{if .ID}}-0{{.ID}}{{end}}
+var SSHConfig = `{{range .BastionHosts}}# Bastion - {{.Region}} #{{.ID}}
+Host {{.Region}}-0{{.ID}}
 HostName {{.IP}}
 StrictHostKeyChecking no
 

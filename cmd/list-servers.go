@@ -12,19 +12,26 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var (
-	// flag variables.
+// flags stores list-servers command flag variables.
+type flags struct {
 	name       *[]string
 	env        *[]string
 	region     *[]string
 	ignoreCase *bool
+}
+
+var (
+	listServersFlags flags
+	lsFlags          flags
 
 	// listServersCmd represents the list-servers command.
 	listServersCmd = &cobra.Command{
 		Use:   "list-servers",
 		Short: "List available servers",
 		Long:  "This subcommand lists available servers from selected AWS region(s), filtered by Name and Env tags.",
-		Run:   runListServers,
+		Run: func(cmd *cobra.Command, args []string) {
+			runListServers(cmd, args, listServersFlags)
+		},
 	}
 
 	// lsCmd represents the ls (list-servers alias) command.
@@ -32,7 +39,9 @@ var (
 		Use:   "ls",
 		Short: "List available servers (alias of list-servers)",
 		Long:  "This subcommand lists available servers from selected AWS region(s), filtered by Name and Env tags.",
-		Run:   runListServers,
+		Run: func(cmd *cobra.Command, args []string) {
+			runListServers(cmd, args, lsFlags)
+		},
 	}
 )
 
@@ -41,16 +50,16 @@ func init() {
 	rootCmd.AddCommand(listServersCmd)
 	rootCmd.AddCommand(lsCmd)
 
-	addFlags(listServersCmd)
-	addFlags(lsCmd)
+	addFlags(lsCmd, &lsFlags)
+	addFlags(listServersCmd, &listServersFlags)
 }
 
 // addFlags adds the default list-servers command flags.
-func addFlags(cmd *cobra.Command) {
-	name = cmd.Flags().StringSliceP("name", "n", []string{}, "filter servers by Name tag, multiple comma separated values are allowed")
-	env = cmd.Flags().StringSliceP("env", "e", []string{}, "filter servers by Env tag, multiple comma separated values are allowed")
-	region = cmd.Flags().StringSliceP("region", "r", []string{"us-east-1"}, "look for servers in selected AWS region(s), any of: us-east-1,us-west-2,eu-west-1,ap-northeast-1,ap-southeast-2,all")
-	ignoreCase = cmd.Flags().BoolP("ignore-case", "i", false, "ignore case in tag filters")
+func addFlags(cmd *cobra.Command, f *flags) {
+	f.name = cmd.Flags().StringSliceP("name", "n", []string{}, "filter servers by Name tag, multiple comma separated values are allowed")
+	f.env = cmd.Flags().StringSliceP("env", "e", []string{}, "filter servers by Env tag, multiple comma separated values are allowed")
+	f.region = cmd.Flags().StringSliceP("region", "r", []string{"us-east-1"}, "look for servers in selected AWS region(s), any of: us-east-1,us-west-2,eu-west-1,ap-northeast-1,ap-southeast-2,all")
+	f.ignoreCase = cmd.Flags().BoolP("ignore-case", "i", false, "ignore case in tag filters")
 
 	// Remove confusing `[]` symbols from region's default value.
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
@@ -66,19 +75,19 @@ func addFlags(cmd *cobra.Command) {
 }
 
 // runListServers executes the list-servers command.
-func runListServers(_ *cobra.Command, _ []string) {
+func runListServers(cmd *cobra.Command, _ []string, f flags) {
 	cfg, err := config.LoadFromFile()
 	if err != nil {
 		exitWithError(err)
 	}
 
-	regions, err := checkRegions(*region)
+	regions, err := checkRegions(*f.region)
 	if err != nil {
 		exitWithError(err)
 	}
 
-	nameFilter := core.NewFilter(core.TagName, *name, core.Contains, *ignoreCase)
-	envFilter := core.NewFilter(core.TagEnv, *env, core.Equals, *ignoreCase)
+	nameFilter := core.NewFilter(core.TagName, *f.name, core.Contains, *f.ignoreCase)
+	envFilter := core.NewFilter(core.TagEnv, *f.env, core.Equals, *f.ignoreCase)
 	servers, err := core.GetAllServers(cfg.AWSCredentials, regions, nameFilter, envFilter)
 	if err != nil {
 		exitWithError(err)
