@@ -2,6 +2,12 @@
 ## [Unreleased]
 
 
+<a name="1.2.1"></a>
+## [1.2.1] - 2019-03-22
+### Fix
+- **list-servers:** Fix flag parsing for `list-servers` command
+
+
 <a name="1.2.0"></a>
 ## [1.2.0] - 2019-03-18
 ### Feat
@@ -33,7 +39,8 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.2.1...HEAD
+[1.2.1]: https://github.com/gr00by87/fst/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/gr00by87/fst/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/gr00by87/fst/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/gr00by87/fst/compare/1.0.0...1.0.1
