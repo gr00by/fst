@@ -2,6 +2,12 @@
 ## [Unreleased]
 
 
+<a name="1.3.0"></a>
+## [1.3.0] - 2019-03-25
+### Feat
+- **ssh:** Added support for `-N` ssh flag
+
+
 <a name="1.2.1"></a>
 ## [1.2.1] - 2019-03-22
 ### Fix
@@ -39,7 +45,8 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.2.1...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/gr00by87/fst/compare/1.2.1...1.3.0
 [1.2.1]: https://github.com/gr00by87/fst/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/gr00by87/fst/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/gr00by87/fst/compare/1.0.1...1.1.0
