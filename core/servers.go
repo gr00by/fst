@@ -72,9 +72,8 @@ func GetAllServers(awsCfg config.AWSCredentials, regions []string, filters ...*f
 	sort.Slice(servers, func(i, j int) bool {
 		if servers[i].Env == servers[j].Env {
 			return strings.ToLower(servers[i].Name) < strings.ToLower(servers[j].Name)
-		} else {
-			return servers[i].Env < servers[j].Env
 		}
+		return servers[i].Env < servers[j].Env
 	})
 
 	return
@@ -121,24 +120,26 @@ func getFromRegion(awsCfg config.AWSCredentials, region string, dii *ec2.Describ
 
 	servers := []Server{}
 	for _, res := range instances.Reservations {
-		server := Server{
-			Region:    region,
-			PrivateIP: ptrToString(res.Instances[0].PrivateIpAddress),
-			PublicIP:  ptrToString(res.Instances[0].PublicIpAddress),
-		}
+		for _, instance := range res.Instances {
+			server := Server{
+				Region:    region,
+				PrivateIP: ptrToString(instance.PrivateIpAddress),
+				PublicIP:  ptrToString(instance.PublicIpAddress),
+			}
 
-		tags := map[string]*string{
-			TagName: &server.Name,
-			TagEnv:  &server.Env,
-			TagType: &server.Type,
-		}
+			tags := map[string]*string{
+				TagName: &server.Name,
+				TagEnv:  &server.Env,
+				TagType: &server.Type,
+			}
 
-		getTagValues(tags, res.Instances[0].Tags)
+			getTagValues(tags, instance.Tags)
 
-		// List only servers with private ip address.
-		if server.PrivateIP != "" {
-			if checkAllFilters(filters, tags) {
-				servers = append(servers, server)
+			// List only servers with private ip address.
+			if server.PrivateIP != "" {
+				if checkAllFilters(filters, tags) {
+					servers = append(servers, server)
+				}
 			}
 		}
 	}
