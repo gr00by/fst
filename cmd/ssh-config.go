@@ -9,7 +9,6 @@ import (
 	"github.com/alecthomas/template"
 	"github.com/gr00by87/fst/templates"
 	"github.com/spf13/cobra"
-	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
 var (
@@ -57,7 +56,7 @@ func runSSHConfig(_ *cobra.Command, _ []string) {
 		exitWithError(fmt.Errorf("invalid region: %s", *proxyJumpRegion))
 	}
 
-	if !proceed() {
+	if !proceed("This will overwrite your current ssh config file, do you want to proceed?") {
 		return
 	}
 
@@ -86,20 +85,6 @@ func runSSHConfig(_ *cobra.Command, _ []string) {
 	}
 
 	fmt.Println(success, "SSH config updated successfully")
-}
-
-// proceed displays a confirmation prompt.
-func proceed() (proceed bool) {
-	if err := survey.AskOne(
-		&survey.Confirm{
-			Message: "This will overwrite your current ssh config file, do you want to proceed?",
-		},
-		&proceed,
-		survey.Required,
-	); err != nil {
-		exitWithError(err)
-	}
-	return
 }
 
 // openConfigFile opens ssh config file for writing.

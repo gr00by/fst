@@ -3,9 +3,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
+	"text/tabwriter"
 
 	"github.com/gr00by87/fst/config"
 	"github.com/gr00by87/fst/core"
+	"github.com/gr00by87/fst/vpn"
 	"github.com/logrusorgru/aurora"
 	"github.com/spf13/cobra"
 	survey "gopkg.in/AlecAivazis/survey.v1"
@@ -15,6 +19,7 @@ import (
 var (
 	awsCredentials *bool
 	bastionHosts   *bool
+	vpnConfig      *bool
 	checkStatus    *bool
 
 	// configCmd represents the config command.
@@ -31,40 +36,53 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	awsCredentials = configCmd.Flags().BoolP("aws-credentials", "a", false, "displays prompts to setup aws credentials")
 	bastionHosts = configCmd.Flags().BoolP("bastion-hosts", "b", false, "updates bastion hosts list")
+	vpnConfig = configCmd.Flags().BoolP("vpn-config", "v", false, "displays prompts to setup vpn (optional)")
 	checkStatus = configCmd.Flags().BoolP("check-status", "c", false, "checks configuration status")
 }
 
 // runConfig executes the config command.
 func runConfig(_ *cobra.Command, _ []string) {
-	surveyCore.QuestionIcon = "🔒"
-
 	if *checkStatus {
 		checkConfigStatus()
 		return
 	}
 
 	var (
-		cfg *config.Config
-		err error
+		cfg    *config.Config
+		err    error
+		runAll bool
 	)
 
 	// No switch passed, run the whole configuration.
-	if !*awsCredentials && !*bastionHosts {
-		*awsCredentials, *bastionHosts = true, true
+	if !*awsCredentials && !*vpnConfig && !*bastionHosts {
+		runAll = true
 	}
 
-	if *awsCredentials {
+	if *awsCredentials || runAll {
 		if err = saveConfig(cfg, getAWSCredentials); err != nil {
 			exitWithError(err)
 		}
 		fmt.Println(success, "AWS credentials updated successfully")
 	}
 
-	if *bastionHosts {
+	if *bastionHosts || runAll {
 		if err = saveConfig(cfg, getBastionHosts); err != nil {
 			exitWithError(err)
 		}
 		fmt.Println(success, "Bastion hosts list updated successfully")
+	}
+
+	switch {
+	case runAll:
+		if !proceed("Do you want to run VPN configuration?") {
+			break
+		}
+		fallthrough
+	case *vpnConfig:
+		if err = saveConfig(cfg, getVPNConfig); err != nil {
+			exitWithError(err)
+		}
+		fmt.Println(success, "VPN config updated successfully")
 	}
 }
 
@@ -89,20 +107,76 @@ func saveConfig(cfg *config.Config, cfgFunc func(*config.Config) error) error {
 
 // getAWSCredentials runs aws credentials configuration.
 func getAWSCredentials(cfg *config.Config) error {
+	surveyCore.QuestionIcon = "🔒"
 	prompts := []*survey.Question{
 		{
-			Name:     "id",
+			Name:     "ID",
 			Prompt:   &survey.Input{Message: "Enter AWS ID:"},
 			Validate: validateLength("AWS Secret", 20),
 		},
 		{
-			Name:     "secret",
+			Name:     "Secret",
 			Prompt:   &survey.Input{Message: "Enter AWS Secret:"},
 			Validate: validateLength("AWS Secret", 40),
 		},
 	}
 
 	return survey.Ask(prompts, &cfg.AWSCredentials)
+}
+
+// getVPNConfig runs vpn configuration.
+func getVPNConfig(cfg *config.Config) error {
+	pritunl, err := vpn.NewPritunl()
+	if err != nil {
+		return err
+	}
+
+	profiles, err := pritunl.ListProfiles()
+	if err != nil {
+		return err
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintln(w, "ID\tPROFILE NAME\tPROFILE ID")
+
+	for i, profile := range profiles {
+		fmt.Fprintf(w, "%d\t%s\t%s\n", i+1, profile.Name, profile.ID)
+	}
+	w.Flush()
+
+	surveyCore.QuestionIcon = "🔒"
+	prompts := []*survey.Question{
+		{
+			Name:   "ProfileID",
+			Prompt: &survey.Input{Message: "Select Profile:"},
+			Validate: func(val interface{}) error {
+				id, err := strconv.Atoi(val.(string))
+				if err != nil {
+					return errors.New("ID must be a number")
+				}
+				if id == 0 || id > len(profiles) {
+					return errors.New("Invalid ID")
+				}
+				return nil
+			},
+			Transform: func(val interface{}) interface{} {
+				id, _ := strconv.Atoi(val.(string))
+				return profiles[id-1].ID
+			},
+		},
+		{
+			Name:   "OTPSecret",
+			Prompt: &survey.Input{Message: "Enter OTP Secret (optional):"},
+			Validate: func(val interface{}) error {
+				if len(val.(string)) > 0 {
+					return validateLength("OTP Secret", 16)(val)
+				}
+				return nil
+			},
+		},
+	}
+
+	return survey.Ask(prompts, &cfg.VPNConfig)
 }
 
 // getBastionHosts runs bastion hosts configuration.
@@ -129,11 +203,15 @@ func getBastionHosts(cfg *config.Config) error {
 
 // checkConfigStatus checks the current configuration status.
 func checkConfigStatus() {
-	awsCredentialsStatus, bastionHostsStatus := failure, failure
+	awsCredentialsStatus, vpnConfigStatus, bastionHostsStatus := failure, failure, failure
 
 	if cfg, err := config.LoadFromFile(); err == nil {
 		if cfg.AWSCredentials.ID != "" && cfg.AWSCredentials.Secret != "" {
 			awsCredentialsStatus = success
+		}
+
+		if cfg.VPNConfig.ProfileID != "" {
+			vpnConfigStatus = success
 		}
 
 		if len(cfg.BastionHosts) > 0 {
@@ -143,6 +221,7 @@ func checkConfigStatus() {
 
 	fmt.Println(awsCredentialsStatus, "AWS credentials configuration")
 	fmt.Println(bastionHostsStatus, "Bastion hosts configuration")
+	fmt.Println(vpnConfigStatus, "VPN configuration")
 }
 
 // validateLength validates the prompts input value length.
@@ -153,4 +232,19 @@ func validateLength(label string, length int) func(interface{}) error {
 		}
 		return nil
 	}
+}
+
+// proceed displays a confirmation prompt.
+func proceed(msg string) (proceed bool) {
+	surveyCore.QuestionIcon = "?"
+	if err := survey.AskOne(
+		&survey.Confirm{
+			Message: msg,
+		},
+		&proceed,
+		survey.Required,
+	); err != nil {
+		exitWithError(err)
+	}
+	return
 }

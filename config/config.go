@@ -19,12 +19,19 @@ var (
 type Config struct {
 	AWSCredentials AWSCredentials      `json:"aws_credentials"`
 	BastionHosts   map[string][]string `json:"bastion_hosts"`
+	VPNConfig      VPNConfig           `json:"vpn_config"`
 }
 
 // AWSCredentials stores the AWS credentials.
 type AWSCredentials struct {
 	ID     string `json:"id"`
 	Secret string `json:"secret"`
+}
+
+// VPNConfig stores the VPN configuration.
+type VPNConfig struct {
+	ProfileID string `json:"profile_id"`
+	OTPSecret string `json:"otp_secret"`
 }
 
 // SaveToFile saves configuration data to file.
