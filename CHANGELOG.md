@@ -2,6 +2,12 @@
 ## [Unreleased]
 
 
+<a name="1.4.1"></a>
+## [1.4.1] - 2020-04-05
+### Refactor
+- **vpn:** Send exactly the same payload to `/profile` handler as `Pritunl` would
+
+
 <a name="1.4.0"></a>
 ## [1.4.0] - 2020-04-04
 ### Build
@@ -61,7 +67,8 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.4.0...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.4.1...HEAD
+[1.4.1]: https://github.com/gr00by87/fst/compare/1.4.0...1.4.1
 [1.4.0]: https://github.com/gr00by87/fst/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/gr00by87/fst/compare/1.2.1...1.3.0
 [1.2.1]: https://github.com/gr00by87/fst/compare/1.2.0...1.2.1
