@@ -45,12 +45,15 @@ func runSSH(_ *cobra.Command, args []string) {
 		exitWithError(err)
 	}
 
-	bastionHost, ok := cfg.BastionHosts[server.Region]
-	if !ok {
+	bastionHosts := cfg.BastionHosts[server.Region]
+	if len(bastionHosts) == 0 && !disableBastionHostCheck[server.Region] {
 		exitWithError(fmt.Errorf("bastion host not found for region: %s", server.Region))
 	}
 
-	cmd := []string{"ssh", "-J", randomHost(bastionHost)}
+	cmd := []string{"ssh"}
+	if len(bastionHosts) > 0 {
+		cmd = append(cmd, "-J", randomHost(bastionHosts))
+	}
 	if *forwardPort != "" {
 		cmd = append(cmd, "-L", *forwardPort)
 	}

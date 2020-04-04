@@ -15,6 +15,10 @@ var (
 	// status symbols.
 	success = aurora.Green("✓")
 	failure = aurora.Red("✗")
+
+	disableBastionHostCheck = map[string]bool{
+		"us-east-1": true,
+	}
 )
 
 // init updates the survey error template.
