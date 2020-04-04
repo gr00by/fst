@@ -2,6 +2,22 @@
 ## [Unreleased]
 
 
+<a name="1.4.0"></a>
+## [1.4.0] - 2020-04-04
+### Build
+- **modules:** Add go modules
+
+### Feat
+- **vpn:** Add `vpn` subcommannd
+
+### Fix
+- **core:** List servers nested under `res.Instances`
+
+### Refactor
+- **scp:** Don't use bastion host in `us-east-1` region
+- **ssh:** Don't use bastion host in `us-east-1` region
+
+
 <a name="1.3.0"></a>
 ## [1.3.0] - 2019-03-25
 ### Feat
@@ -45,7 +61,8 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.4.0...HEAD
+[1.4.0]: https://github.com/gr00by87/fst/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/gr00by87/fst/compare/1.2.1...1.3.0
 [1.2.1]: https://github.com/gr00by87/fst/compare/1.2.0...1.2.1
 [1.2.0]: https://github.com/gr00by87/fst/compare/1.1.0...1.2.0
