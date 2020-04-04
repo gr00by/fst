@@ -56,12 +56,15 @@ func runSCP(_ *cobra.Command, args []string) {
 		}
 	}
 
-	bastionHost, ok := cfg.BastionHosts[region]
-	if !ok {
+	bastionHosts := cfg.BastionHosts[region]
+	if len(bastionHosts) == 0 && !disableBastionHostCheck[region] {
 		exitWithError(fmt.Errorf("bastion host not found for region: %s", region))
 	}
 
-	cmd := []string{"scp", fmt.Sprintf("-o 'ProxyJump %s'", randomHost(bastionHost))}
+	cmd := []string{"scp"}
+	if len(bastionHosts) > 0 {
+		cmd = append(cmd, fmt.Sprintf("-o 'ProxyJump %s'", randomHost(bastionHosts)))
+	}
 	if *scpConfigFile != "" {
 		cmd = append(cmd, "-F", *scpConfigFile)
 	}
