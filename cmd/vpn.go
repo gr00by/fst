@@ -73,7 +73,7 @@ func connect(cfg *config.Config, pritunl *vpn.Pritunl) {
 			Name:   "Pin",
 			Prompt: &survey.Password{Message: "Enter Pin:"},
 			Validate: func(val interface{}) error {
-				if len(val.(string)) < 0 {
+				if len(val.(string)) < 1 {
 					return errors.New("Pin cannot be empty")
 				}
 				return nil
