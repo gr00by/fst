@@ -203,19 +203,17 @@ func getBastionHosts(cfg *config.Config) error {
 
 // checkConfigStatus checks the current configuration status.
 func checkConfigStatus() {
-	awsCredentialsStatus, vpnConfigStatus, bastionHostsStatus := failure, failure, failure
+	awsCredentialsStatus, bastionHostsStatus, vpnConfigStatus := failure, failure, failure
 
 	if cfg, err := config.LoadFromFile(); err == nil {
 		if cfg.AWSCredentials.ID != "" && cfg.AWSCredentials.Secret != "" {
 			awsCredentialsStatus = success
 		}
-
-		if cfg.VPNConfig.ProfileID != "" {
-			vpnConfigStatus = success
-		}
-
 		if len(cfg.BastionHosts) > 0 {
 			bastionHostsStatus = success
+		}
+		if cfg.VPNConfig.ProfileID != "" {
+			vpnConfigStatus = success
 		}
 	}
 

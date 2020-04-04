@@ -158,13 +158,30 @@ func (p *Pritunl) Connect(creds ConnectionCredentials) error {
 		}
 	}
 
+	serverPublicKeyParts := []string{}
+	for _, part := range gjson.GetBytes(profile.config, "server_public_key").Array() {
+		serverPublicKeyParts = append(serverPublicKeyParts, part.String())
+	}
+
+	// Send the same data as JS would send:
+	// https://github.com/pritunl/pritunl-client-electron/blob/1.0.2395.64/client/www/js/service.js#L111.
 	payloadData := map[string]interface{}{
-		"id":        creds.ID,
-		"reconnect": true,
-		"timeout":   true,
-		"username":  "pritunl",
-		"password":  creds.Pin + creds.OTP,
-		"data":      fmt.Sprintf("%s\n%s", ovpn, key),
+		"id":                    creds.ID,
+		"mode":                  "ovpn",
+		"port_wg":               0,
+		"org_id":                gjson.GetBytes(profile.config, "organization_id").String(),
+		"user_id":               gjson.GetBytes(profile.config, "user_id").String(),
+		"server_id":             gjson.GetBytes(profile.config, "server_id").String(),
+		"sync_token":            gjson.GetBytes(profile.config, "sync_token").String(),
+		"sync_secret":           gjson.GetBytes(profile.config, "sync_secret").String(),
+		"username":              "pritunl",
+		"password":              creds.Pin + creds.OTP,
+		"server_public_key":     strings.Join(serverPublicKeyParts, "\n"),
+		"server_box_public_key": gjson.GetBytes(profile.config, "server_box_public_key").String(),
+		"token_ttl":             gjson.GetBytes(profile.config, "token_ttl").Int(),
+		"reconnect":             true,
+		"timeout":               true,
+		"data":                  fmt.Sprintf("%s\n%s", ovpn, key),
 	}
 
 	payload, err := json.Marshal(payloadData)
@@ -200,9 +217,11 @@ func (p *Pritunl) makeRequest(verb string, payload []byte) ([]byte, error) {
 		}
 	}
 
-	req.Header.Set("User-Agent", "pritunl")
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Auth-Key", p.authKey)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Connection", "close")
+	req.Header.Set("User-Agent", "pritunl")
 
 	client := http.Client{
 		Transport: &http.Transport{
