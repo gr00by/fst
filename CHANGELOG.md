@@ -2,6 +2,15 @@
 ## [Unreleased]
 
 
+<a name="1.4.2"></a>
+## [1.4.2] - 2020-04-05
+### Build
+- **Modules:** Update go modules
+
+### Refactor
+- **vpn:** Subscribe to `Pritunl` WebSocket events to receive connection status updates
+
+
 <a name="1.4.1"></a>
 ## [1.4.1] - 2020-04-05
 ### Refactor
@@ -67,7 +76,8 @@
 - **app:** First release
 
 
-[Unreleased]: https://github.com/gr00by87/fst/compare/1.4.1...HEAD
+[Unreleased]: https://github.com/gr00by87/fst/compare/1.4.2...HEAD
+[1.4.2]: https://github.com/gr00by87/fst/compare/1.4.1...1.4.2
 [1.4.1]: https://github.com/gr00by87/fst/compare/1.4.0...1.4.1
 [1.4.0]: https://github.com/gr00by87/fst/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/gr00by87/fst/compare/1.2.1...1.3.0
