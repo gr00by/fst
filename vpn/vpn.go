@@ -17,11 +17,13 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 )
 
 const (
+	eventsURL      = "ws://unix/events"
 	profileURL     = "http://unix/profile"
 	authKeyPath    = "/var/run/pritunl.auth"
 	unixSocketPath = "/var/run/pritunl.sock"
@@ -41,6 +43,12 @@ type Profile struct {
 	Name   string
 	path   string
 	config []byte
+}
+
+// Event stores the Pritunl event data.
+type Event struct {
+	Message []byte
+	Err     error
 }
 
 // Pritunl stores the data required to make requests to Pritunl.
@@ -91,6 +99,40 @@ func (p *Pritunl) ListProfiles() ([]Profile, error) {
 	}
 
 	return profiles, nil
+}
+
+// GetEvents subscribes to Pritunl `/events` websocket handler.
+func (p *Pritunl) GetEvents(ctx context.Context, events chan Event) (func() error, error) {
+	dialer := websocket.Dialer{
+		NetDial: func(_, _ string) (net.Conn, error) {
+			return net.Dial("unix", unixSocketPath)
+		},
+	}
+
+	headers := http.Header{}
+	p.setAuthHeaders(headers)
+
+	c, _, err := dialer.Dial(eventsURL, headers)
+	if err != nil {
+		return nil, errors.Wrap(err, "error subscribing to pritunl events")
+	}
+
+	go func() {
+		for {
+			_, message, err := c.ReadMessage()
+			events <- Event{
+				Message: message,
+				Err:     errors.Wrap(err, "error reading message"),
+			}
+		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+		events <- Event{Err: ctx.Err()}
+	}()
+
+	return c.Close, nil
 }
 
 // IsConnected checks if connection is established.
@@ -208,7 +250,7 @@ func (p *Pritunl) Disconnect(id string) error {
 	return errors.Wrap(err, "error making request")
 }
 
-// makeRequest makes request to Pritunl client.
+// makeRequest makes request to Pritunl `/profile` handler.
 func (p *Pritunl) makeRequest(verb string, payload []byte) ([]byte, error) {
 	req, err := http.NewRequest(verb, profileURL, bytes.NewBuffer(payload))
 	if err != nil {
@@ -217,11 +259,10 @@ func (p *Pritunl) makeRequest(verb string, payload []byte) ([]byte, error) {
 		}
 	}
 
-	req.Header.Set("Auth-Key", p.authKey)
+	p.setAuthHeaders(req.Header)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Connection", "close")
-	req.Header.Set("User-Agent", "pritunl")
 
 	client := http.Client{
 		Transport: &http.Transport{
@@ -246,6 +287,12 @@ func (p *Pritunl) makeRequest(verb string, payload []byte) ([]byte, error) {
 		return nil, errors.Wrap(err, "error reading response body")
 	}
 	return body, nil
+}
+
+// setAuthHeaders sets the Pritunl authorizationn headers to provided `headers`.
+func (p *Pritunl) setAuthHeaders(headers http.Header) {
+	headers.Set("Auth-Key", p.authKey)
+	headers.Set("User-Agent", "pritunl")
 }
 
 // getAuthKey reads the auth key file and returns its contents.

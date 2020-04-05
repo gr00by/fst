@@ -10,7 +10,6 @@ import (
 	"github.com/gr00by87/fst/config"
 	"github.com/gr00by87/fst/core"
 	"github.com/gr00by87/fst/vpn"
-	"github.com/logrusorgru/aurora"
 	"github.com/spf13/cobra"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 	surveyCore "gopkg.in/AlecAivazis/survey.v1/core"
@@ -181,7 +180,7 @@ func getVPNConfig(cfg *config.Config) error {
 
 // getBastionHosts runs bastion hosts configuration.
 func getBastionHosts(cfg *config.Config) error {
-	fmt.Println(aurora.Cyan("ⓘ"), "Updating bastion hosts list...")
+	fmt.Println(info, "Updating bastion hosts list...")
 
 	typeFilter := core.NewFilter(core.TagType, []string{"bastion"}, core.Equals, false)
 	servers, err := core.GetAllServers(cfg.AWSCredentials, core.AllowedRegions, typeFilter)

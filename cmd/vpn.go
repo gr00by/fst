@@ -3,12 +3,15 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/gr00by87/fst/config"
 	"github.com/gr00by87/fst/vpn"
-	"github.com/logrusorgru/aurora"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
 	"github.com/xlzd/gotp"
+	"golang.org/x/net/context"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 	surveyCore "gopkg.in/AlecAivazis/survey.v1/core"
 )
@@ -61,9 +64,8 @@ func connect(cfg *config.Config, pritunl *vpn.Pritunl) {
 	if err != nil {
 		exitWithError(err)
 	}
-
 	if connected {
-		fmt.Println(aurora.Cyan("ⓘ"), "Connection to VPN already established")
+		fmt.Println(info, "Connection to VPN already established")
 		return
 	}
 
@@ -95,19 +97,74 @@ func connect(cfg *config.Config, pritunl *vpn.Pritunl) {
 		exitWithError(err)
 	}
 
+	events := make(chan vpn.Event, 100)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	unsubscribe, err := pritunl.GetEvents(ctx, events)
+	if err != nil {
+		exitWithError(err)
+	}
+	defer unsubscribe()
+
 	err = pritunl.Connect(credentials)
 	if err != nil {
 		exitWithError(err)
 	}
+	fmt.Println(info, "Connecting to VPN...")
 
-	fmt.Println(success, "Connecting to VPN, check the status in Pritunl client")
+	for event := range events {
+		if event.Err != nil {
+			exitWithError(event.Err)
+		}
+
+		msgType := gjson.GetBytes(event.Message, "type").String()
+		switch {
+		case strings.HasSuffix(msgType, "_error"):
+			fmt.Println(failure, "Connection failed:", strings.ReplaceAll(msgType, "_", " "))
+			return
+		case msgType == "connected":
+			fmt.Println(success, "Connected")
+			return
+		}
+	}
 }
 
 // disconnect disconnects from vpn.
 func disconnect(cfg *config.Config, pritunl *vpn.Pritunl) {
+	connected, err := pritunl.IsConnected(cfg.VPNConfig.ProfileID)
+	if err != nil {
+		exitWithError(err)
+	}
+	if !connected {
+		fmt.Println(info, "Connection to VPN not established")
+		return
+	}
+
+	events := make(chan vpn.Event, 100)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	unsubscribe, err := pritunl.GetEvents(ctx, events)
+	if err != nil {
+		exitWithError(err)
+	}
+	defer unsubscribe()
+
 	if err := pritunl.Disconnect(cfg.VPNConfig.ProfileID); err != nil {
 		exitWithError(err)
 	}
+	fmt.Println(info, "Disconnecting from VPN...")
 
-	fmt.Println(success, "Disconnecting from VPN, check the status in Pritunl client")
+	for event := range events {
+		if event.Err != nil {
+			exitWithError(event.Err)
+		}
+
+		msgType := gjson.GetBytes(event.Message, "type").String()
+		if msgType == "disconnected" {
+			fmt.Println(success, "Disconnected")
+			return
+		}
+	}
 }
